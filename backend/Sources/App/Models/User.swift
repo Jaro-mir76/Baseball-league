@@ -44,4 +44,20 @@ final class User: Model, @unchecked Sendable {
         self.name = name
         self.role = role
     }
+
+    func toResponse() -> UserResponse {
+        let createdAtString: String?
+        if let createdAt {
+            createdAtString = ISO8601DateFormatter().string(from: createdAt)
+        } else {
+            createdAtString = nil
+        }
+        return UserResponse(
+            id: id ?? UUID(),
+            email: email,
+            name: name,
+            role: role,
+            createdAt: createdAtString
+        )
+    }
 }

@@ -60,3 +60,9 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
+
+#Project specific
+.env
+/*.md
+.DS_Store
+!/README.md

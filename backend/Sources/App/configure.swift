@@ -15,7 +15,8 @@ func configure(_ app: Application) async throws {
     
     app.databases.use(.postgres(configuration: dbConfig), as: .psql)
 
-    // No migrations yet — just run to verify connection
+    app.migrations.add(CreateUser())
+
     try await app.autoMigrate()
 
     try routes(app)

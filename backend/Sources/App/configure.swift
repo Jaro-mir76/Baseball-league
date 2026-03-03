@@ -1,9 +1,14 @@
 import Vapor
 import Fluent
 import FluentPostgresDriver
+import JWT
 
 func configure(_ app: Application) async throws {
-        
+
+    // JWT signing key
+    let jwtSecret = Environment.get("JWT_SECRET") ?? "dev-secret-change-in-production"
+    app.jwt.signers.use(.hs256(key: jwtSecret))
+
     let dbConfig = SQLPostgresConfiguration(
         hostname: Environment.get("POSTGRES_HOST") ?? "localhost",
         port: Environment.get("POSTGRES_PORT").flatMap(Int.init) ?? SQLPostgresConfiguration.ianaPortNumber,

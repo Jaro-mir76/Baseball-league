@@ -6,6 +6,7 @@ actor APIClient {
     private let session: URLSession
     private let decoder: JSONDecoder
     private let encoder: JSONEncoder
+    private let tokenManager: TokenManager
 
     private var accessToken: String?
     private var refreshToken: String?
@@ -13,13 +14,18 @@ actor APIClient {
     private var isRefreshing = false
     private var refreshContinuations: [CheckedContinuation<TokenResponse, any Error>] = []
 
-    init(baseURL: URL = URL(string: "http://localhost:8080")!) {
+    init(baseURL: URL = URL(string: "http://localhost:8080")!, tokenManager: TokenManager = TokenManager()) {
         self.baseURL = baseURL
+        self.tokenManager = tokenManager
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 30
         self.session = URLSession(configuration: config)
         self.decoder = JSONDecoder()
         self.encoder = JSONEncoder()
+
+        // Restore tokens from Keychain
+        self.accessToken = tokenManager.getAccessToken()
+        self.refreshToken = tokenManager.getRefreshToken()
     }
 
     // MARK: - Token Management
@@ -27,11 +33,13 @@ actor APIClient {
     func setTokens(access: String, refresh: String) {
         self.accessToken = access
         self.refreshToken = refresh
+        try? tokenManager.saveTokens(access: access, refresh: refresh)
     }
 
     func clearTokens() {
         self.accessToken = nil
         self.refreshToken = nil
+        try? tokenManager.clearTokens()
     }
 
     // MARK: - Public Request Methods
@@ -133,6 +141,7 @@ actor APIClient {
 
             self.accessToken = tokenResponse.accessToken
             self.refreshToken = tokenResponse.refreshToken
+            try? tokenManager.saveTokens(access: tokenResponse.accessToken, refresh: tokenResponse.refreshToken)
 
             isRefreshing = false
             let continuations = refreshContinuations
@@ -150,6 +159,7 @@ actor APIClient {
 
             self.accessToken = nil
             self.refreshToken = nil
+            try? tokenManager.clearTokens()
             throw APIError.unauthorized
         }
     }

@@ -14,11 +14,18 @@ actor APIClient {
     private var isRefreshing = false
     private var refreshContinuations: [CheckedContinuation<TokenResponse, any Error>] = []
 
-    init(baseURL: URL = URL(string: "http://localhost:8080")!, tokenManager: TokenManager = TokenManager()) {
+    init(
+        baseURL: URL = URL(string: "http://localhost:8080")!,
+        tokenManager: TokenManager = TokenManager(),
+        sessionConfiguration: URLSessionConfiguration? = nil
+    ) {
         self.baseURL = baseURL
         self.tokenManager = tokenManager
-        let config = URLSessionConfiguration.default
-        config.timeoutIntervalForRequest = 30
+        let config = sessionConfiguration ?? {
+            let c = URLSessionConfiguration.default
+            c.timeoutIntervalForRequest = 30
+            return c
+        }()
         self.session = URLSession(configuration: config)
         self.decoder = JSONDecoder()
         self.encoder = JSONEncoder()

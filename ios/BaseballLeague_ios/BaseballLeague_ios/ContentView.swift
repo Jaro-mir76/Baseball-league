@@ -32,8 +32,7 @@ struct MainTabView: View {
 
             Tab("Teams", systemImage: "person.3") {
                 NavigationStack {
-                    Text("Teams")
-                        .navigationTitle("Teams")
+                    TeamListView(apiClient: appState.apiClient)
                 }
             }
 

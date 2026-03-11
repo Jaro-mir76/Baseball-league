@@ -7,7 +7,7 @@ final class AppState {
     var currentUser: UserResponse?
     var isAuthenticated: Bool { currentUser != nil }
 
-    private let apiClient: APIClient
+    let apiClient: APIClient
 
     var isAdmin: Bool {
         currentUser?.role == .admin

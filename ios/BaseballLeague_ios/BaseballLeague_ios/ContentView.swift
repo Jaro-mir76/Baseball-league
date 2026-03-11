@@ -1,25 +1,67 @@
-//
-//  ContentView.swift
-//  BaseballLeague_ios
-//
-//  Created by Jaromir Jagieluk on 24.02.2026.
-//
-
 import SwiftUI
 import BaseballShared
 
 struct ContentView: View {
+    @Environment(AppState.self) private var appState
+
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        Group {
+            if appState.isAuthenticated {
+                MainTabView()
+            } else {
+                LoginView(appState: appState)
+            }
         }
-        .padding()
+        .task {
+            await appState.restoreSession()
+        }
     }
 }
 
-#Preview {
-    ContentView()
+struct MainTabView: View {
+    @Environment(AppState.self) private var appState
+
+    var body: some View {
+        TabView {
+            Tab("Games", systemImage: "sportscourt") {
+                NavigationStack {
+                    Text("Games")
+                        .navigationTitle("Games")
+                }
+            }
+
+            Tab("Teams", systemImage: "person.3") {
+                NavigationStack {
+                    Text("Teams")
+                        .navigationTitle("Teams")
+                }
+            }
+
+            Tab("Profile", systemImage: "person.circle") {
+                NavigationStack {
+                    VStack(spacing: 16) {
+                        if let user = appState.currentUser {
+                            Text(user.name)
+                                .font(.title2)
+                            Text(user.email)
+                                .foregroundStyle(.secondary)
+                            Text(user.role.rawValue.capitalized)
+                                .font(.caption)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 4)
+                                .background(.fill)
+                                .clipShape(Capsule())
+                        }
+
+                        Button("Log Out", role: .destructive) {
+                            Task {
+                                await appState.logout()
+                            }
+                        }
+                    }
+                    .navigationTitle("Profile")
+                }
+            }
+        }
+    }
 }

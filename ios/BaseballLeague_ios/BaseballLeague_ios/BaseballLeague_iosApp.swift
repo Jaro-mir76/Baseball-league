@@ -1,17 +1,18 @@
-//
-//  BaseballLeague_iosApp.swift
-//  BaseballLeague_ios
-//
-//  Created by Jaromir Jagieluk on 24.02.2026.
-//
-
 import SwiftUI
 
 @main
 struct BaseballLeague_iosApp: App {
+    @State private var appState: AppState
+
+    init() {
+        let apiClient = APIClient()
+        _appState = State(initialValue: AppState(apiClient: apiClient))
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(appState)
         }
     }
 }

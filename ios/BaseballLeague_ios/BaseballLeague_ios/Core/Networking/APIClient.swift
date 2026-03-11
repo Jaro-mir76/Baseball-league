@@ -28,6 +28,14 @@ actor APIClient {
         self.refreshToken = tokenManager.getRefreshToken()
     }
 
+    var hasTokens: Bool {
+        refreshToken != nil
+    }
+
+    var currentRefreshTokenValue: String? {
+        refreshToken
+    }
+
     // MARK: - Token Management
 
     func setTokens(access: String, refresh: String) {

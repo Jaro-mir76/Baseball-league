@@ -23,6 +23,7 @@ func configure(_ app: Application) async throws {
     app.migrations.add(CreateUser())
     app.migrations.add(CreateRefreshToken())
     app.migrations.add(SeedAdminUser())
+    app.migrations.add(CreateTeam())
 
     try await app.autoMigrate()
 

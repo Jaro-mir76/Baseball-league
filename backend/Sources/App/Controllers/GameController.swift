@@ -22,8 +22,8 @@ struct GameController: RouteCollection {
         let perPage = min(req.query[Int.self, at: "perPage"] ?? 20, 50)
 
         var query = Game.query(on: req.db)
-            .join(parent: \.$homeTeam)
-            .join(parent: \.$awayTeam)
+            .with(\.$homeTeam)
+            .with(\.$awayTeam)
 
         if let statusRaw = req.query[String.self, at: "status"],
            let status = GameStatus(rawValue: statusRaw) {
@@ -58,9 +58,7 @@ struct GameController: RouteCollection {
             .all()
 
         let items = games.map { game in
-            let home = try! game.joined(Team.self, \Game.$homeTeam)
-            let away = try! game.joined(Team.self, \Game.$awayTeam)
-            return game.toResponse(homeTeam: home, awayTeam: away)
+            game.toResponse(homeTeam: game.homeTeam, awayTeam: game.awayTeam)
         }
 
         return PaginatedResponse(
@@ -73,18 +71,20 @@ struct GameController: RouteCollection {
 
     @Sendable
     func show(req: Request) async throws -> GameResponse {
+        guard let gameID: UUID = req.parameters.get("gameID") else {
+            throw Abort(.badRequest)
+        }
+
         guard let game = try await Game.query(on: req.db)
-            .filter(\.$id == req.parameters.get("gameID")!)
-            .join(parent: \.$homeTeam)
-            .join(parent: \.$awayTeam)
+            .filter(\.$id == gameID)
+            .with(\.$homeTeam)
+            .with(\.$awayTeam)
             .first()
         else {
             throw Abort(.notFound)
         }
 
-        let home = try game.joined(Team.self, \Game.$homeTeam)
-        let away = try game.joined(Team.self, \Game.$awayTeam)
-        return game.toResponse(homeTeam: home, awayTeam: away)
+        return game.toResponse(homeTeam: game.homeTeam, awayTeam: game.awayTeam)
     }
 
     // MARK: - POST /games
@@ -140,10 +140,14 @@ struct GameController: RouteCollection {
 
     @Sendable
     func updateStatus(req: Request) async throws -> GameResponse {
+        guard let gameID: UUID = req.parameters.get("gameID") else {
+            throw Abort(.badRequest)
+        }
+
         guard let game = try await Game.query(on: req.db)
-            .filter(\.$id == req.parameters.get("gameID")!)
-            .join(parent: \.$homeTeam)
-            .join(parent: \.$awayTeam)
+            .filter(\.$id == gameID)
+            .with(\.$homeTeam)
+            .with(\.$awayTeam)
             .first()
         else {
             throw Abort(.notFound)
@@ -164,9 +168,7 @@ struct GameController: RouteCollection {
         game.status = input.status
         try await game.save(on: req.db)
 
-        let home = try game.joined(Team.self, \Game.$homeTeam)
-        let away = try game.joined(Team.self, \Game.$awayTeam)
-        return game.toResponse(homeTeam: home, awayTeam: away)
+        return game.toResponse(homeTeam: game.homeTeam, awayTeam: game.awayTeam)
     }
 
     // MARK: - Helpers

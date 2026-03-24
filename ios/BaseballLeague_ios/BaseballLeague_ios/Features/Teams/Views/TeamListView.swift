@@ -2,9 +2,14 @@ import SwiftUI
 import BaseballShared
 
 struct TeamListView: View {
+    @Environment(AppState.self) private var appState
     @State private var viewModel: TeamListViewModel
+    @State private var showingNewTeam = false
+
+    private let apiClient: APIClient
 
     init(apiClient: APIClient) {
+        self.apiClient = apiClient
         _viewModel = State(initialValue: TeamListViewModel(apiClient: apiClient))
     }
 
@@ -26,6 +31,24 @@ struct TeamListView: View {
             }
         }
         .navigationTitle("Teams")
+        .toolbar {
+            if appState.isAdmin {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        showingNewTeam = true
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $showingNewTeam) {
+            NavigationStack {
+                TeamFormView(apiClient: apiClient) {
+                    Task { await viewModel.fetchTeams() }
+                }
+            }
+        }
         .task {
             await viewModel.fetchTeams()
         }

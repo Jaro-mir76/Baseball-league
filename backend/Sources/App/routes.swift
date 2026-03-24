@@ -7,6 +7,7 @@ func routes(_ app: Application) throws {
     try api.register(collection: AuthController())
     try api.register(collection: TeamController())
     try api.register(collection: PlayerController())
+    try api.register(collection: GameController())
 
     app.get("health") { req async throws -> [String: String] in
         guard let sqlDB = req.db as? any SQLDatabase else {

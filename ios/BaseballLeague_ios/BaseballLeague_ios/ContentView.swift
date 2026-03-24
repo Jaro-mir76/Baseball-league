@@ -33,6 +33,9 @@ struct MainTabView: View {
             Tab("Teams", systemImage: "person.3") {
                 NavigationStack {
                     TeamListView(apiClient: appState.apiClient)
+                        .navigationDestination(for: UUID.self) { teamId in
+                            TeamDetailView(apiClient: appState.apiClient, teamId: teamId)
+                        }
                 }
             }
 

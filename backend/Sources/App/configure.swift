@@ -25,6 +25,7 @@ func configure(_ app: Application) async throws {
     app.migrations.add(SeedAdminUser())
     app.migrations.add(CreateTeam())
     app.migrations.add(CreatePlayer())
+    app.migrations.add(CreateGame())
 
     try await app.autoMigrate()
 

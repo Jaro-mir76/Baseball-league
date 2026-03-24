@@ -26,7 +26,15 @@ struct TeamController: RouteCollection {
         }
 
         let teams = try await query.sort(\.$name).all()
-        return teams.map { $0.toResponse() }
+
+        var responses: [TeamResponse] = []
+        for team in teams {
+            let playerCount = try await Player.query(on: req.db)
+                .filter(\.$team.$id == team.id ?? UUID())
+                .count()
+            responses.append(team.toResponse(playerCount: playerCount))
+        }
+        return responses
     }
 
     // MARK: - GET /teams/:id
@@ -37,12 +45,17 @@ struct TeamController: RouteCollection {
             throw Abort(.notFound)
         }
 
-        // Players will be loaded in Phase 3
+        let players = try await Player.query(on: req.db)
+            .filter(\.$team.$id == team.id ?? UUID())
+            .sort(\.$lastName)
+            .sort(\.$firstName)
+            .all()
+
         return TeamDetailResponse(
             id: team.id ?? UUID(),
             name: team.name,
             shortName: team.shortName,
-            players: [],
+            players: players.map { $0.toSummary() },
             createdAt: team.createdAt.map { ISO8601DateFormatter().string(from: $0) } ?? ""
         )
     }

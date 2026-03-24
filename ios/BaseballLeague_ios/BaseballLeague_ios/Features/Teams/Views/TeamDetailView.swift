@@ -4,6 +4,8 @@ import BaseballShared
 struct TeamDetailView: View {
     @Environment(AppState.self) private var appState
     @State private var viewModel: TeamDetailViewModel
+    @State private var showingAddPlayer = false
+    @State private var showingEditTeam = false
 
     private let apiClient: APIClient
 
@@ -23,13 +25,26 @@ struct TeamDetailView: View {
                         }
                     }
 
-                    Section("Roster") {
+                    Section {
                         if detail.players.isEmpty {
                             Text("No players on this team.")
                                 .foregroundStyle(.secondary)
                         } else {
                             ForEach(detail.players, id: \.id) { player in
                                 PlayerRow(player: player)
+                            }
+                        }
+                    } header: {
+                        HStack {
+                            Text("Roster")
+                            Spacer()
+                            if appState.isAdmin {
+                                Button {
+                                    showingAddPlayer = true
+                                } label: {
+                                    Image(systemName: "plus.circle")
+                                }
+                                .textCase(nil)
                             }
                         }
                     }
@@ -45,8 +60,27 @@ struct TeamDetailView: View {
         .toolbar {
             if appState.isAdmin {
                 ToolbarItem(placement: .primaryAction) {
-                    NavigationLink(value: "editTeam") {
-                        Text("Edit")
+                    Button("Edit") {
+                        showingEditTeam = true
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $showingAddPlayer) {
+            NavigationStack {
+                PlayerFormView(apiClient: apiClient, teamId: viewModel.teamId) {
+                    Task { await viewModel.fetchDetail() }
+                }
+            }
+        }
+        .sheet(isPresented: $showingEditTeam) {
+            if let detail = viewModel.detail {
+                NavigationStack {
+                    TeamFormView(
+                        apiClient: apiClient,
+                        team: TeamResponse(id: detail.id, name: detail.name, shortName: detail.shortName, playerCount: detail.players.count, createdAt: detail.createdAt)
+                    ) {
+                        Task { await viewModel.fetchDetail() }
                     }
                 }
             }

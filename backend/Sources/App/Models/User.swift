@@ -45,6 +45,10 @@ final class User: Model, @unchecked Sendable {
         self.role = role
     }
 
+    func toSummary() -> UserSummary {
+        UserSummary(id: id ?? UUID(), name: name)
+    }
+
     func toResponse() -> UserResponse {
         let createdAtString: String?
         if let createdAt {

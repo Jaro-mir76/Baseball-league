@@ -1,6 +1,6 @@
 import Foundation
 
-public struct TeamResponse: Codable, Sendable, Equatable {
+public struct TeamResponse: Codable, Sendable, Equatable, Hashable {
     public let id: UUID
     public let name: String
     public let shortName: String?

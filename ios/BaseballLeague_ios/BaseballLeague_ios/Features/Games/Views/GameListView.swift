@@ -5,6 +5,7 @@ struct GameListView: View {
     @Environment(AppState.self) private var appState
     @State private var viewModel: GameListViewModel
     @State private var showingFilters = false
+    @State private var showingNewGame = false
 
     private let apiClient: APIClient
 
@@ -40,11 +41,27 @@ struct GameListView: View {
         }
         .navigationTitle("Games")
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
+            if appState.isAdmin || appState.isScorer {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        showingNewGame = true
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                }
+            }
+            ToolbarItem(placement: .secondaryAction) {
                 Button {
                     showingFilters = true
                 } label: {
-                    Image(systemName: hasActiveFilters ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                    Label("Filters", systemImage: hasActiveFilters ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                }
+            }
+        }
+        .sheet(isPresented: $showingNewGame) {
+            NavigationStack {
+                GameFormView(apiClient: apiClient) {
+                    Task { await viewModel.fetchGames() }
                 }
             }
         }

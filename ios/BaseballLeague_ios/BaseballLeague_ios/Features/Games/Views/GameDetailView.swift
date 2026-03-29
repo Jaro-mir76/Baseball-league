@@ -2,6 +2,7 @@ import SwiftUI
 import BaseballShared
 
 struct GameDetailView: View {
+    @Environment(AppState.self) private var appState
     @State private var game: GameResponse?
     @State private var isLoading = false
     @State private var errorMessage: String?
@@ -19,27 +20,30 @@ struct GameDetailView: View {
             if let game {
                 List {
                     Section {
-                        HStack {
-                            Text(game.homeTeam.name)
-                                .font(.headline)
-                            Spacer()
-                            Text("\(game.homeScore)")
-                                .font(.title2.monospacedDigit().bold())
-                        }
-                        HStack {
-                            Text(game.awayTeam.name)
-                                .font(.headline)
-                            Spacer()
-                            Text("\(game.awayScore)")
-                                .font(.title2.monospacedDigit().bold())
-                        }
+                        ScoreCard(game: game)
                     }
 
-                    Section {
+                    Section("Details") {
                         LabeledContent("Status") {
                             StatusBadge(status: game.status)
                         }
                         LabeledContent("Date", value: String(game.date.prefix(10)))
+                    }
+
+                    if game.status == .scheduled, appState.isScorer || appState.isAdmin {
+                        Section {
+                            Button("Start Game") {
+                                Task { await updateStatus(.live) }
+                            }
+                        }
+                    }
+
+                    if game.status == .live, appState.isScorer || appState.isAdmin {
+                        Section {
+                            Button("End Game") {
+                                Task { await updateStatus(.final) }
+                            }
+                        }
                     }
                 }
             } else if isLoading {
@@ -67,5 +71,74 @@ struct GameDetailView: View {
             errorMessage = error.localizedDescription
         }
         isLoading = false
+    }
+
+    private func updateStatus(_ status: GameStatus) async {
+        do {
+            game = try await apiClient.request(
+                .updateGameStatus(gameId),
+                body: GameStatusUpdateRequest(status: status)
+            )
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+}
+
+// MARK: - Score Card
+
+private struct ScoreCard: View {
+    let game: GameResponse
+
+    var body: some View {
+        VStack(spacing: 12) {
+            HStack {
+                TeamScoreColumn(
+                    name: game.homeTeam.name,
+                    shortName: game.homeTeam.shortName,
+                    score: game.homeScore,
+                    label: "HOME"
+                )
+                Spacer()
+                Text("vs")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                TeamScoreColumn(
+                    name: game.awayTeam.name,
+                    shortName: game.awayTeam.shortName,
+                    score: game.awayScore,
+                    label: "AWAY"
+                )
+            }
+        }
+        .padding(.vertical, 8)
+    }
+}
+
+private struct TeamScoreColumn: View {
+    let name: String
+    let shortName: String?
+    let score: Int
+    let label: String
+
+    var body: some View {
+        VStack(spacing: 4) {
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            Text("\(score)")
+                .font(.system(size: 40, weight: .bold, design: .rounded))
+                .monospacedDigit()
+            Text(name)
+                .font(.subheadline.bold())
+                .multilineTextAlignment(.center)
+            if let shortName {
+                Text(shortName)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity)
     }
 }

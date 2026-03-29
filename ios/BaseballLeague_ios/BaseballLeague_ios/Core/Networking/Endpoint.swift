@@ -26,6 +26,11 @@ nonisolated enum Endpoint: Sendable {
     case createGame
     case updateGameStatus(UUID)
 
+    // MARK: - Game Events
+    case gameEvents(gameID: UUID)
+    case createGameEvent(gameID: UUID)
+    case deleteGameEvent(gameID: UUID, eventID: UUID)
+
     var path: String {
         switch self {
         case .login:                "/api/v1/auth/login"
@@ -45,18 +50,21 @@ nonisolated enum Endpoint: Sendable {
         case .game(let id):         "/api/v1/games/\(id)"
         case .createGame:           "/api/v1/games"
         case .updateGameStatus(let id): "/api/v1/games/\(id)/status"
+        case .gameEvents(let id):       "/api/v1/games/\(id)/events"
+        case .createGameEvent(let id):  "/api/v1/games/\(id)/events"
+        case .deleteGameEvent(let gameID, let eventID): "/api/v1/games/\(gameID)/events/\(eventID)"
         }
     }
 
     var method: String {
         switch self {
-        case .login, .register, .refresh, .logout, .createTeam, .createPlayer, .createGame:
+        case .login, .register, .refresh, .logout, .createTeam, .createPlayer, .createGame, .createGameEvent:
             "POST"
-        case .teams, .team, .teamPlayers, .games, .game:
+        case .teams, .team, .teamPlayers, .games, .game, .gameEvents:
             "GET"
         case .updateTeam, .updatePlayer:
             "PUT"
-        case .deleteTeam, .deletePlayer:
+        case .deleteTeam, .deletePlayer, .deleteGameEvent:
             "DELETE"
         case .updateGameStatus:
             "PATCH"
@@ -67,11 +75,12 @@ nonisolated enum Endpoint: Sendable {
         switch self {
         case .login, .register, .refresh:
             false
-        case .teams, .team, .teamPlayers, .games, .game:
+        case .teams, .team, .teamPlayers, .games, .game, .gameEvents:
             false
         case .logout, .createTeam, .updateTeam, .deleteTeam,
              .createPlayer, .updatePlayer, .deletePlayer,
-             .createGame, .updateGameStatus:
+             .createGame, .updateGameStatus,
+             .createGameEvent, .deleteGameEvent:
             true
         }
     }

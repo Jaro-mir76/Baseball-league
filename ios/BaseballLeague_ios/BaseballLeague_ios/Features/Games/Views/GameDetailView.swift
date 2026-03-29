@@ -30,19 +30,9 @@ struct GameDetailView: View {
                         LabeledContent("Date", value: String(game.date.prefix(10)))
                     }
 
-                    if game.status == .scheduled, appState.isScorer || appState.isAdmin {
+                    if game.status != .final, appState.isScorer || appState.isAdmin {
                         Section {
-                            Button("Start Game") {
-                                Task { await updateStatus(.live) }
-                            }
-                        }
-                    }
-
-                    if game.status == .live, appState.isScorer || appState.isAdmin {
-                        Section {
-                            Button("End Game") {
-                                Task { await updateStatus(.final) }
-                            }
+                            NavigationLink("Live Scoring", destination: ScoringView(apiClient: apiClient, game: game))
                         }
                     }
                 }

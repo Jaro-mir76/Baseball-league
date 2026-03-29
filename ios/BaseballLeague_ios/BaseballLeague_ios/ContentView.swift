@@ -1,6 +1,10 @@
 import SwiftUI
 import BaseballShared
 
+struct GameNavigationID: Hashable {
+    let id: UUID
+}
+
 struct ContentView: View {
     @Environment(AppState.self) private var appState
 
@@ -25,8 +29,10 @@ struct MainTabView: View {
         TabView {
             Tab("Games", systemImage: "sportscourt") {
                 NavigationStack {
-                    Text("Games")
-                        .navigationTitle("Games")
+                    GameListView(apiClient: appState.apiClient)
+                        .navigationDestination(for: GameNavigationID.self) { nav in
+                            GameDetailView(apiClient: appState.apiClient, gameId: nav.id)
+                        }
                 }
             }
 

@@ -80,7 +80,13 @@ actor APIClient {
         body: (some Encodable)?,
         isRetry: Bool = false
     ) async throws -> T {
-        var urlRequest = URLRequest(url: baseURL.appendingPathComponent(endpoint.path))
+        var url = baseURL.appendingPathComponent(endpoint.path)
+        if let queryItems = endpoint.queryItems {
+            var components = URLComponents(url: url, resolvingAgainstBaseURL: false)!
+            components.queryItems = queryItems
+            url = components.url!
+        }
+        var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = endpoint.method
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
 

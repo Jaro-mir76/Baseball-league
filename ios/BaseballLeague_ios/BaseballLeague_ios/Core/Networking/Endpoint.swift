@@ -20,6 +20,12 @@ nonisolated enum Endpoint: Sendable {
     case updatePlayer(UUID)
     case deletePlayer(UUID)
 
+    // MARK: - Games
+    case games(page: Int, perPage: Int, status: String?, teamId: UUID?, dateFrom: String?, dateTo: String?)
+    case game(UUID)
+    case createGame
+    case updateGameStatus(UUID)
+
     var path: String {
         switch self {
         case .login:                "/api/v1/auth/login"
@@ -35,19 +41,25 @@ nonisolated enum Endpoint: Sendable {
         case .createPlayer:         "/api/v1/players"
         case .updatePlayer(let id): "/api/v1/players/\(id)"
         case .deletePlayer(let id): "/api/v1/players/\(id)"
+        case .games:                "/api/v1/games"
+        case .game(let id):         "/api/v1/games/\(id)"
+        case .createGame:           "/api/v1/games"
+        case .updateGameStatus(let id): "/api/v1/games/\(id)/status"
         }
     }
 
     var method: String {
         switch self {
-        case .login, .register, .refresh, .logout, .createTeam, .createPlayer:
+        case .login, .register, .refresh, .logout, .createTeam, .createPlayer, .createGame:
             "POST"
-        case .teams, .team, .teamPlayers:
+        case .teams, .team, .teamPlayers, .games, .game:
             "GET"
         case .updateTeam, .updatePlayer:
             "PUT"
         case .deleteTeam, .deletePlayer:
             "DELETE"
+        case .updateGameStatus:
+            "PATCH"
         }
     }
 
@@ -55,11 +67,29 @@ nonisolated enum Endpoint: Sendable {
         switch self {
         case .login, .register, .refresh:
             false
-        case .teams, .team, .teamPlayers:
+        case .teams, .team, .teamPlayers, .games, .game:
             false
         case .logout, .createTeam, .updateTeam, .deleteTeam,
-             .createPlayer, .updatePlayer, .deletePlayer:
+             .createPlayer, .updatePlayer, .deletePlayer,
+             .createGame, .updateGameStatus:
             true
+        }
+    }
+
+    var queryItems: [URLQueryItem]? {
+        switch self {
+        case .games(let page, let perPage, let status, let teamId, let dateFrom, let dateTo):
+            var items = [
+                URLQueryItem(name: "page", value: "\(page)"),
+                URLQueryItem(name: "perPage", value: "\(perPage)"),
+            ]
+            if let status { items.append(URLQueryItem(name: "status", value: status)) }
+            if let teamId { items.append(URLQueryItem(name: "teamId", value: teamId.uuidString)) }
+            if let dateFrom { items.append(URLQueryItem(name: "dateFrom", value: dateFrom)) }
+            if let dateTo { items.append(URLQueryItem(name: "dateTo", value: dateTo)) }
+            return items
+        default:
+            return nil
         }
     }
 }

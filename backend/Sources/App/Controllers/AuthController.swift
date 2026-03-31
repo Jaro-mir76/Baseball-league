@@ -6,6 +6,7 @@ struct AuthController: RouteCollection {
         let auth = routes.grouped("auth")
 
         auth.post("login", use: login)
+        auth.post("signup", use: signup)
         auth.post("refresh", use: refresh)
 
         let protected = auth.grouped(JWTAuthMiddleware())
@@ -22,6 +23,15 @@ struct AuthController: RouteCollection {
         let service = AuthService(app: req.application)
         let user = try await service.register(input, on: req.db)
         return try await user.encodeResponse(status: .created, for: req)
+    }
+
+    @Sendable
+    func signup(req: Request) async throws -> Response {
+        try RegisterRequest.validate(content: req)
+        let input = try req.content.decode(RegisterRequest.self)
+        let service = AuthService(app: req.application)
+        let response = try await service.signup(input, on: req.db)
+        return try await response.encodeResponse(status: .created, for: req)
     }
 
     @Sendable

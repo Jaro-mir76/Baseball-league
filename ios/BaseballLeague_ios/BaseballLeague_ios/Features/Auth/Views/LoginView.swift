@@ -2,8 +2,10 @@ import SwiftUI
 
 struct LoginView: View {
     @State private var viewModel: LoginViewModel
+    private let appState: AppState
 
     init(appState: AppState) {
+        self.appState = appState
         _viewModel = State(initialValue: LoginViewModel(appState: appState))
     }
 
@@ -43,6 +45,12 @@ struct LoginView: View {
                         }
                     }
                     .disabled(!viewModel.isValid || viewModel.isLoading)
+                }
+
+                Section {
+                    NavigationLink("Create Account") {
+                        RegisterView(appState: appState)
+                    }
                 }
             }
             .navigationTitle("Baseball League")

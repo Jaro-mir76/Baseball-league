@@ -30,7 +30,7 @@ final class AppState {
 
     func register(email: String, password: String, name: String) async throws {
         let body = RegisterRequest(email: email, password: password, name: name, role: .viewer)
-        let response: TokenResponse = try await apiClient.request(.register, body: body)
+        let response: TokenResponse = try await apiClient.request(.signup, body: body)
         await apiClient.setTokens(access: response.accessToken, refresh: response.refreshToken)
         currentUser = response.user
     }

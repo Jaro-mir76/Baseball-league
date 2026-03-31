@@ -8,3 +8,9 @@ extension RegisterRequest: @retroactive Validatable {
         validations.add("name", as: String.self, is: !.empty && .count(...100))
     }
 }
+
+extension UserUpdateRequest: @retroactive Validatable {
+    public static func validations(_ validations: inout Validations) {
+        validations.add("name", as: String.self, is: !.empty && .count(...100))
+    }
+}

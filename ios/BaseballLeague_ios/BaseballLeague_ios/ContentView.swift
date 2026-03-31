@@ -45,6 +45,14 @@ struct MainTabView: View {
                 }
             }
 
+            if appState.isAdmin {
+                Tab("Users", systemImage: "person.2.badge.gearshape") {
+                    NavigationStack {
+                        UserListView(apiClient: appState.apiClient)
+                    }
+                }
+            }
+
             Tab("Profile", systemImage: "person.circle") {
                 NavigationStack {
                     VStack(spacing: 16) {

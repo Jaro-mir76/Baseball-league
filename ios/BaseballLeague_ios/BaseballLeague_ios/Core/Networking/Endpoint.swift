@@ -3,9 +3,15 @@ import Foundation
 nonisolated enum Endpoint: Sendable {
     // MARK: - Auth
     case login
+    case signup
     case register
     case refresh
     case logout
+
+    // MARK: - Users
+    case users
+    case updateUser(UUID)
+    case deleteUser(UUID)
 
     // MARK: - Teams
     case teams
@@ -34,9 +40,13 @@ nonisolated enum Endpoint: Sendable {
     var path: String {
         switch self {
         case .login:                "/api/v1/auth/login"
+        case .signup:               "/api/v1/auth/signup"
         case .register:             "/api/v1/auth/register"
         case .refresh:              "/api/v1/auth/refresh"
         case .logout:               "/api/v1/auth/logout"
+        case .users:                "/api/v1/users"
+        case .updateUser(let id):   "/api/v1/users/\(id)"
+        case .deleteUser(let id):   "/api/v1/users/\(id)"
         case .teams:                "/api/v1/teams"
         case .team(let id):         "/api/v1/teams/\(id)"
         case .createTeam:           "/api/v1/teams"
@@ -58,13 +68,13 @@ nonisolated enum Endpoint: Sendable {
 
     var method: String {
         switch self {
-        case .login, .register, .refresh, .logout, .createTeam, .createPlayer, .createGame, .createGameEvent:
+        case .login, .signup, .register, .refresh, .logout, .createTeam, .createPlayer, .createGame, .createGameEvent:
             "POST"
-        case .teams, .team, .teamPlayers, .games, .game, .gameEvents:
+        case .teams, .team, .teamPlayers, .games, .game, .gameEvents, .users:
             "GET"
-        case .updateTeam, .updatePlayer:
+        case .updateTeam, .updatePlayer, .updateUser:
             "PUT"
-        case .deleteTeam, .deletePlayer, .deleteGameEvent:
+        case .deleteTeam, .deletePlayer, .deleteGameEvent, .deleteUser:
             "DELETE"
         case .updateGameStatus:
             "PATCH"
@@ -73,14 +83,16 @@ nonisolated enum Endpoint: Sendable {
 
     var requiresAuth: Bool {
         switch self {
-        case .login, .register, .refresh:
+        case .login, .signup, .refresh:
             false
         case .teams, .team, .teamPlayers, .games, .game, .gameEvents:
             false
-        case .logout, .createTeam, .updateTeam, .deleteTeam,
+        case .logout, .register,
+             .createTeam, .updateTeam, .deleteTeam,
              .createPlayer, .updatePlayer, .deletePlayer,
              .createGame, .updateGameStatus,
-             .createGameEvent, .deleteGameEvent:
+             .createGameEvent, .deleteGameEvent,
+             .users, .updateUser, .deleteUser:
             true
         }
     }

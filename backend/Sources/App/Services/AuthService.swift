@@ -32,6 +32,44 @@ struct AuthService {
         return user.toResponse()
     }
 
+    // MARK: - Public Signup
+
+    func signup(_ request: RegisterRequest, on db: any Database) async throws -> TokenResponse {
+        let email = request.email.lowercased().trimmingCharacters(in: .whitespaces)
+
+        let existing = try await User.query(on: db)
+            .filter(\.$email == email)
+            .withDeleted()
+            .first()
+        if existing != nil {
+            throw Abort(.conflict, reason: "Email already registered")
+        }
+
+        let passwordHash = try Bcrypt.hash(request.password)
+
+        let user = User(
+            email: email,
+            passwordHash: passwordHash,
+            name: request.name,
+            role: .viewer
+        )
+        try await user.save(on: db)
+
+        let tokenPair = try generateTokens(for: user)
+        let refreshToken = RefreshToken(
+            token: tokenPair.refreshToken,
+            userID: try user.requireID(),
+            expiresAt: Date().addingTimeInterval(30 * 24 * 60 * 60)
+        )
+        try await refreshToken.save(on: db)
+
+        return TokenResponse(
+            accessToken: tokenPair.accessToken,
+            refreshToken: tokenPair.refreshToken,
+            user: user.toResponse()
+        )
+    }
+
     // MARK: - Login
 
     func login(_ request: LoginRequest, on db: any Database) async throws -> TokenResponse {

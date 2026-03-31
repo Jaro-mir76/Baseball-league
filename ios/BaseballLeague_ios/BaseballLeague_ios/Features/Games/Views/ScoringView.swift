@@ -157,7 +157,7 @@ private struct ScoreStepper: View {
 
 // MARK: - Event Row
 
-private struct EventRow: View {
+struct EventRow: View {
     let event: GameEventResponse
 
     var body: some View {

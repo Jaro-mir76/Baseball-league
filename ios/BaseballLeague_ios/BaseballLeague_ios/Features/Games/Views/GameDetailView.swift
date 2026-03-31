@@ -4,6 +4,7 @@ import BaseballShared
 struct GameDetailView: View {
     @Environment(AppState.self) private var appState
     @State private var game: GameResponse?
+    @State private var events: [GameEventResponse] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
 
@@ -35,6 +36,14 @@ struct GameDetailView: View {
                             NavigationLink("Live Scoring", destination: ScoringView(apiClient: apiClient, game: game))
                         }
                     }
+
+                    if !events.isEmpty {
+                        Section("Event Timeline") {
+                            ForEach(events, id: \.id) { event in
+                                EventRow(event: event)
+                            }
+                        }
+                    }
                 }
             } else if isLoading {
                 ProgressView()
@@ -57,22 +66,13 @@ struct GameDetailView: View {
         errorMessage = nil
         do {
             game = try await apiClient.request(.game(gameId))
+            events = try await apiClient.request(.gameEvents(gameID: gameId))
         } catch {
             errorMessage = error.localizedDescription
         }
         isLoading = false
     }
 
-    private func updateStatus(_ status: GameStatus) async {
-        do {
-            game = try await apiClient.request(
-                .updateGameStatus(gameId),
-                body: GameStatusUpdateRequest(status: status)
-            )
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-    }
 }
 
 // MARK: - Score Card

@@ -35,3 +35,6 @@ extension PageMetadata: @retroactive Content {}
 extension PaginatedResponse: @retroactive Content {}
 extension TeamSummary: @retroactive Content {}
 extension UserSummary: @retroactive Content {}
+
+// MARK: - Common
+extension UserUpdateRequest: @retroactive Content {}

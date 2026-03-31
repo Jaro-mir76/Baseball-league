@@ -1,5 +1,6 @@
 @testable import App
 import VaporTesting
+import Fluent
 import Testing
 import BaseballShared
 
@@ -121,6 +122,83 @@ struct AuthTests {
                 req.headers.bearerAuthorization = .init(token: adminToken)
                 try req.content.encode(RegisterRequest(
                     email: "short@test.com",
+                    password: "abc",
+                    name: "Short Pass",
+                    role: .viewer
+                ))
+            }, afterResponse: { res async in
+                #expect(res.status == .badRequest)
+            })
+        }
+    }
+
+    // MARK: - Signup
+
+    @Test func signupCreatesViewerAndReturnsTokens() async throws {
+        try await withApp(configure: configure) { app in
+            try await app.testing().test(.POST, "api/v1/auth/signup", beforeRequest: { req in
+                try req.content.encode(RegisterRequest(
+                    email: "newuser@test.com",
+                    password: "password123",
+                    name: "New User",
+                    role: .viewer
+                ))
+            }, afterResponse: { res async in
+                #expect(res.status == .created)
+                let token = try? res.content.decode(TokenResponse.self)
+                #expect(token != nil)
+                #expect(token?.accessToken.isEmpty == false)
+                #expect(token?.refreshToken.isEmpty == false)
+                #expect(token?.user?.role == .viewer)
+                #expect(token?.user?.email == "newuser@test.com")
+                #expect(token?.user?.name == "New User")
+            })
+
+            // Cleanup
+            try await cleanupUser(email: "newuser@test.com", on: app.db)
+        }
+    }
+
+    @Test func signupIgnoresRoleField() async throws {
+        try await withApp(configure: configure) { app in
+            try await app.testing().test(.POST, "api/v1/auth/signup", beforeRequest: { req in
+                try req.content.encode(RegisterRequest(
+                    email: "sneaky@test.com",
+                    password: "password123",
+                    name: "Sneaky Admin",
+                    role: .admin
+                ))
+            }, afterResponse: { res async in
+                #expect(res.status == .created)
+                let token = try? res.content.decode(TokenResponse.self)
+                #expect(token?.user?.role == .viewer)
+            })
+
+            // Cleanup
+            try await cleanupUser(email: "sneaky@test.com", on: app.db)
+        }
+    }
+
+    @Test func signupWithDuplicateEmail() async throws {
+        try await withApp(configure: configure) { app in
+            try await app.testing().test(.POST, "api/v1/auth/signup", beforeRequest: { req in
+                try req.content.encode(RegisterRequest(
+                    email: "admin@baseball.local",
+                    password: "password123",
+                    name: "Duplicate",
+                    role: .viewer
+                ))
+            }, afterResponse: { res async in
+                #expect(res.status == .conflict)
+            })
+        }
+    }
+
+    @Test func signupWithShortPassword() async throws {
+        try await withApp(configure: configure) { app in
+            try await app.testing().test(.POST, "api/v1/auth/signup", beforeRequest: { req in
+                try req.content.encode(RegisterRequest(
+                    email: "shortpass@test.com",
                     password: "abc",
                     name: "Short Pass",
                     role: .viewer
@@ -259,5 +337,17 @@ struct AuthTests {
             try req.content.encode(LoginRequest(email: email, password: password))
         })
         return try res.content.decode(TokenResponse.self)
+    }
+
+    private func cleanupUser(email: String, on db: any Database) async throws {
+        if let user = try await User.query(on: db)
+            .withDeleted()
+            .filter(\.$email, .equal, email)
+            .first() {
+            try await RefreshToken.query(on: db)
+                .filter(\.$user.$id, .equal, try user.requireID())
+                .delete()
+            try await user.delete(force: true, on: db)
+        }
     }
 }

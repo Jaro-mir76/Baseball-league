@@ -61,6 +61,14 @@ struct ScoringView: View {
                         EventRow(event: event)
                     }
                 }
+
+                if viewModel.game.status == .live {
+                    Section {
+                        Button("Undo Last Event", role: .destructive) {
+                            Task { await viewModel.deleteLastEvent() }
+                        }
+                    }
+                }
             }
         }
         .navigationTitle("Live Scoring")

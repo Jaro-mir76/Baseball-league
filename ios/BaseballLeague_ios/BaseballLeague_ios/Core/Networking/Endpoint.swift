@@ -85,14 +85,7 @@ nonisolated enum Endpoint: Sendable {
         switch self {
         case .login, .signup, .refresh:
             false
-        case .teams, .team, .teamPlayers, .games, .game, .gameEvents:
-            false
-        case .logout, .register,
-             .createTeam, .updateTeam, .deleteTeam,
-             .createPlayer, .updatePlayer, .deletePlayer,
-             .createGame, .updateGameStatus,
-             .createGameEvent, .deleteGameEvent,
-             .users, .updateUser, .deleteUser:
+        default:
             true
         }
     }

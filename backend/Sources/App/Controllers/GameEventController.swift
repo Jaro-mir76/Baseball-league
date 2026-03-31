@@ -8,9 +8,10 @@ struct GameEventController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
         let games = routes.grouped("games")
 
-        games.get(":gameID", "events", use: index)
+        let authenticated = games.grouped(JWTAuthMiddleware())
+        authenticated.get(":gameID", "events", use: index)
 
-        let scorerOnly = games.grouped(JWTAuthMiddleware()).grouped(RoleMiddleware(.scorer))
+        let scorerOnly = authenticated.grouped(RoleMiddleware(.scorer))
         scorerOnly.post(":gameID", "events", use: create)
         scorerOnly.delete(":gameID", "events", ":eventID", use: delete)
     }

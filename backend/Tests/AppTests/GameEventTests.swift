@@ -43,7 +43,9 @@ struct GameEventTests {
             }, afterResponse: { _ async in })
 
             // Verify game scores updated
-            try await app.testing().test(.GET, "api/v1/games/\(game.id)", afterResponse: { res async in
+            try await app.testing().test(.GET, "api/v1/games/\(game.id)", beforeRequest: { req in
+                req.headers.bearerAuthorization = .init(token: scorer)
+            }, afterResponse: { res async in
                 #expect(res.status == .ok)
                 let detail = try? res.content.decode(GameResponse.self)
                 #expect(detail?.homeScore == 3)
@@ -186,7 +188,9 @@ struct GameEventTests {
                 try req.content.encode(GameEventRequest(type: .score, inning: 1, inningHalf: .bottom, homeScore: 2, awayScore: 1, comment: nil))
             }, afterResponse: { _ async in })
 
-            try await app.testing().test(.GET, "api/v1/games/\(game.id)/events", afterResponse: { res async in
+            try await app.testing().test(.GET, "api/v1/games/\(game.id)/events", beforeRequest: { req in
+                req.headers.bearerAuthorization = .init(token: scorer)
+            }, afterResponse: { res async in
                 #expect(res.status == .ok)
                 let events = try? res.content.decode([GameEventResponse].self)
                 #expect(events?.count == 2)
@@ -200,7 +204,11 @@ struct GameEventTests {
 
     @Test func listEventsGameNotFound() async throws {
         try await withApp(configure: configure) { app in
-            try await app.testing().test(.GET, "api/v1/games/\(UUID())/events", afterResponse: { res async in
+            let token = try await loginAdmin(app: app)
+
+            try await app.testing().test(.GET, "api/v1/games/\(UUID())/events", beforeRequest: { req in
+                req.headers.bearerAuthorization = .init(token: token)
+            }, afterResponse: { res async in
                 #expect(res.status == .notFound)
             })
         }
@@ -236,14 +244,18 @@ struct GameEventTests {
             })
 
             // Scores should revert to first event's scores
-            try await app.testing().test(.GET, "api/v1/games/\(game.id)", afterResponse: { res async in
+            try await app.testing().test(.GET, "api/v1/games/\(game.id)", beforeRequest: { req in
+                req.headers.bearerAuthorization = .init(token: scorer)
+            }, afterResponse: { res async in
                 let detail = try? res.content.decode(GameResponse.self)
                 #expect(detail?.homeScore == 0)
                 #expect(detail?.awayScore == 2)
             })
 
             // Only one event should remain
-            try await app.testing().test(.GET, "api/v1/games/\(game.id)/events", afterResponse: { res async in
+            try await app.testing().test(.GET, "api/v1/games/\(game.id)/events", beforeRequest: { req in
+                req.headers.bearerAuthorization = .init(token: scorer)
+            }, afterResponse: { res async in
                 let events = try? res.content.decode([GameEventResponse].self)
                 #expect(events?.count == 1)
             })
@@ -303,7 +315,9 @@ struct GameEventTests {
             })
 
             // Scores should be 0-0
-            try await app.testing().test(.GET, "api/v1/games/\(game.id)", afterResponse: { res async in
+            try await app.testing().test(.GET, "api/v1/games/\(game.id)", beforeRequest: { req in
+                req.headers.bearerAuthorization = .init(token: scorer)
+            }, afterResponse: { res async in
                 let detail = try? res.content.decode(GameResponse.self)
                 #expect(detail?.homeScore == 0)
                 #expect(detail?.awayScore == 0)

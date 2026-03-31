@@ -6,10 +6,11 @@ struct TeamController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
         let teams = routes.grouped("teams")
 
-        teams.get(use: index)
-        teams.get(":teamID", use: show)
+        let authenticated = teams.grouped(JWTAuthMiddleware())
+        authenticated.get(use: index)
+        authenticated.get(":teamID", use: show)
 
-        let adminOnly = teams.grouped(JWTAuthMiddleware()).grouped(RoleMiddleware(.admin))
+        let adminOnly = authenticated.grouped(RoleMiddleware(.admin))
         adminOnly.post(use: create)
         adminOnly.put(":teamID", use: update)
         adminOnly.delete(":teamID", use: delete)

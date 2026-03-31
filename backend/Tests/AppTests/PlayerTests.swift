@@ -18,7 +18,9 @@ struct PlayerTests {
             try await createPlayer(app: app, token: token, teamId: team.id, firstName: "Mike", lastName: "Johnson", jerseyNumber: 7, position: "SS")
             try await createPlayer(app: app, token: token, teamId: team.id, firstName: "Alex", lastName: "Adams", jerseyNumber: 12, position: "1B")
 
-            try await app.testing().test(.GET, "api/v1/teams/\(team.id)/players", afterResponse: { res async in
+            try await app.testing().test(.GET, "api/v1/teams/\(team.id)/players", beforeRequest: { req in
+                req.headers.bearerAuthorization = .init(token: token)
+            }, afterResponse: { res async in
                 #expect(res.status == .ok)
                 let players = try? res.content.decode([PlayerResponse].self)
                 #expect(players?.count == 2)
@@ -33,7 +35,11 @@ struct PlayerTests {
 
     @Test func listPlayersByTeamNotFound() async throws {
         try await withApp(configure: configure) { app in
-            try await app.testing().test(.GET, "api/v1/teams/\(UUID())/players", afterResponse: { res async in
+            let token = try await loginAdmin(app: app)
+
+            try await app.testing().test(.GET, "api/v1/teams/\(UUID())/players", beforeRequest: { req in
+                req.headers.bearerAuthorization = .init(token: token)
+            }, afterResponse: { res async in
                 #expect(res.status == .notFound)
             })
         }
@@ -45,7 +51,9 @@ struct PlayerTests {
             let token = try await loginAdmin(app: app)
             let team = try await createTeam(app: app, token: token, name: "PT Empty", shortName: "PTE")
 
-            try await app.testing().test(.GET, "api/v1/teams/\(team.id)/players", afterResponse: { res async in
+            try await app.testing().test(.GET, "api/v1/teams/\(team.id)/players", beforeRequest: { req in
+                req.headers.bearerAuthorization = .init(token: token)
+            }, afterResponse: { res async in
                 #expect(res.status == .ok)
                 let players = try? res.content.decode([PlayerResponse].self)
                 #expect(players?.isEmpty == true)
@@ -315,7 +323,9 @@ struct PlayerTests {
             })
 
             // Should not appear in team's players
-            try await app.testing().test(.GET, "api/v1/teams/\(team.id)/players", afterResponse: { res async in
+            try await app.testing().test(.GET, "api/v1/teams/\(team.id)/players", beforeRequest: { req in
+                req.headers.bearerAuthorization = .init(token: token)
+            }, afterResponse: { res async in
                 let players = try? res.content.decode([PlayerResponse].self)
                 #expect(players?.isEmpty == true)
             })
@@ -355,7 +365,9 @@ struct PlayerTests {
             try await createPlayer(app: app, token: token, teamId: team.id, firstName: "Mike", lastName: "Johnson", jerseyNumber: 7, position: "SS")
             try await createPlayer(app: app, token: token, teamId: team.id, firstName: "Alex", lastName: "Adams", jerseyNumber: 12, position: "1B")
 
-            try await app.testing().test(.GET, "api/v1/teams/\(team.id)", afterResponse: { res async in
+            try await app.testing().test(.GET, "api/v1/teams/\(team.id)", beforeRequest: { req in
+                req.headers.bearerAuthorization = .init(token: token)
+            }, afterResponse: { res async in
                 #expect(res.status == .ok)
                 let detail = try? res.content.decode(TeamDetailResponse.self)
                 #expect(detail?.players.count == 2)
@@ -373,7 +385,9 @@ struct PlayerTests {
             let team = try await createTeam(app: app, token: token, name: "PT Count", shortName: "PCN")
             try await createPlayer(app: app, token: token, teamId: team.id, firstName: "Mike", lastName: "Johnson", jerseyNumber: 7, position: "SS")
 
-            try await app.testing().test(.GET, "api/v1/teams", afterResponse: { res async in
+            try await app.testing().test(.GET, "api/v1/teams", beforeRequest: { req in
+                req.headers.bearerAuthorization = .init(token: token)
+            }, afterResponse: { res async in
                 #expect(res.status == .ok)
                 let teams = try? res.content.decode([TeamResponse].self)
                 let found = teams?.first { $0.name == "PT Count" }

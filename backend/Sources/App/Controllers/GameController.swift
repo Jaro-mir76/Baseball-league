@@ -6,10 +6,9 @@ struct GameController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
         let games = routes.grouped("games")
 
-        games.get(use: index)
-        games.get(":gameID", use: show)
-
         let authenticated = games.grouped(JWTAuthMiddleware())
+        authenticated.get(use: index)
+        authenticated.get(":gameID", use: show)
         authenticated.grouped(RoleMiddleware(.admin, .scorer)).post(use: create)
         authenticated.grouped(RoleMiddleware(.scorer)).patch(":gameID", "status", use: updateStatus)
     }

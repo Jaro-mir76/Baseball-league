@@ -12,8 +12,11 @@ struct TeamTests {
     @Test func listTeamsEmpty() async throws {
         try await withApp(configure: configure) { app in
             try await cleanupTeams(on: app.db)
+            let token = try await loginAdmin(app: app)
 
-            try await app.testing().test(.GET, "api/v1/teams", afterResponse: { res async in
+            try await app.testing().test(.GET, "api/v1/teams", beforeRequest: { req in
+                req.headers.bearerAuthorization = .init(token: token)
+            }, afterResponse: { res async in
                 #expect(res.status == .ok)
                 let teams = try? res.content.decode([TeamResponse].self)
                 #expect(teams?.isEmpty == true)
@@ -28,7 +31,9 @@ struct TeamTests {
             try await createTeam(app: app, token: token, name: "Roosters", shortName: "RST")
             try await createTeam(app: app, token: token, name: "Eagles", shortName: "EGL")
 
-            try await app.testing().test(.GET, "api/v1/teams", afterResponse: { res async in
+            try await app.testing().test(.GET, "api/v1/teams", beforeRequest: { req in
+                req.headers.bearerAuthorization = .init(token: token)
+            }, afterResponse: { res async in
                 #expect(res.status == .ok)
                 let teams = try? res.content.decode([TeamResponse].self)
                 #expect(teams?.count == 2)
@@ -47,7 +52,9 @@ struct TeamTests {
             try await createTeam(app: app, token: token, name: "Roosters", shortName: "RST")
             try await createTeam(app: app, token: token, name: "Eagles", shortName: "EGL")
 
-            try await app.testing().test(.GET, "api/v1/teams?search=roost", afterResponse: { res async in
+            try await app.testing().test(.GET, "api/v1/teams?search=roost", beforeRequest: { req in
+                req.headers.bearerAuthorization = .init(token: token)
+            }, afterResponse: { res async in
                 #expect(res.status == .ok)
                 let teams = try? res.content.decode([TeamResponse].self)
                 #expect(teams?.count == 1)
@@ -66,7 +73,9 @@ struct TeamTests {
             let token = try await loginAdmin(app: app)
             let team = try await createTeam(app: app, token: token, name: "Show Roosters", shortName: "SHR")
 
-            try await app.testing().test(.GET, "api/v1/teams/\(team.id)", afterResponse: { res async in
+            try await app.testing().test(.GET, "api/v1/teams/\(team.id)", beforeRequest: { req in
+                req.headers.bearerAuthorization = .init(token: token)
+            }, afterResponse: { res async in
                 #expect(res.status == .ok)
                 let detail = try? res.content.decode(TeamDetailResponse.self)
                 #expect(detail?.name == "Show Roosters")
@@ -80,7 +89,11 @@ struct TeamTests {
 
     @Test func showTeamNotFound() async throws {
         try await withApp(configure: configure) { app in
-            try await app.testing().test(.GET, "api/v1/teams/\(UUID())", afterResponse: { res async in
+            let token = try await loginAdmin(app: app)
+
+            try await app.testing().test(.GET, "api/v1/teams/\(UUID())", beforeRequest: { req in
+                req.headers.bearerAuthorization = .init(token: token)
+            }, afterResponse: { res async in
                 #expect(res.status == .notFound)
             })
         }
@@ -219,7 +232,9 @@ struct TeamTests {
             })
 
             // Should not appear in list
-            try await app.testing().test(.GET, "api/v1/teams", afterResponse: { res async in
+            try await app.testing().test(.GET, "api/v1/teams", beforeRequest: { req in
+                req.headers.bearerAuthorization = .init(token: token)
+            }, afterResponse: { res async in
                 let teams = try? res.content.decode([TeamResponse].self)
                 let found = teams?.contains { $0.name == "Delete Me" }
                 #expect(found != true)

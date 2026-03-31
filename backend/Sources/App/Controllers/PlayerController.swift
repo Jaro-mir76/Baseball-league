@@ -11,8 +11,8 @@ struct PlayerController: RouteCollection {
         adminOnly.put(":playerID", use: update)
         adminOnly.delete(":playerID", use: delete)
 
-        // GET /teams/:teamID/players — public
-        let teams = routes.grouped("teams")
+        // GET /teams/:teamID/players — authenticated
+        let teams = routes.grouped("teams").grouped(JWTAuthMiddleware())
         teams.get(":teamID", "players", use: indexByTeam)
     }
 

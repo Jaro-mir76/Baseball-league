@@ -15,7 +15,9 @@ struct GameTests {
             let token = try await loginAdmin(app: app)
             try await createTeams(app: app, token: token)
 
-            try await app.testing().test(.GET, "api/v1/games", afterResponse: { res async in
+            try await app.testing().test(.GET, "api/v1/games", beforeRequest: { req in
+                req.headers.bearerAuthorization = .init(token: token)
+            }, afterResponse: { res async in
                 #expect(res.status == .ok)
                 let page = try? res.content.decode(PaginatedResponse<GameResponse>.self)
                 #expect(page?.items.isEmpty == true)
@@ -35,7 +37,9 @@ struct GameTests {
             try await createGame(app: app, token: token, homeTeamId: home.id, awayTeamId: away.id, date: "2026-04-01")
             try await createGame(app: app, token: token, homeTeamId: away.id, awayTeamId: home.id, date: "2026-04-02")
 
-            try await app.testing().test(.GET, "api/v1/games", afterResponse: { res async in
+            try await app.testing().test(.GET, "api/v1/games", beforeRequest: { req in
+                req.headers.bearerAuthorization = .init(token: token)
+            }, afterResponse: { res async in
                 #expect(res.status == .ok)
                 let page = try? res.content.decode(PaginatedResponse<GameResponse>.self)
                 #expect(page?.items.count == 2)
@@ -66,7 +70,9 @@ struct GameTests {
                 #expect(res.status == .ok)
             })
 
-            try await app.testing().test(.GET, "api/v1/games?status=live", afterResponse: { res async in
+            try await app.testing().test(.GET, "api/v1/games?status=live", beforeRequest: { req in
+                req.headers.bearerAuthorization = .init(token: token)
+            }, afterResponse: { res async in
                 #expect(res.status == .ok)
                 let page = try? res.content.decode(PaginatedResponse<GameResponse>.self)
                 #expect(page?.items.count == 1)
@@ -94,7 +100,9 @@ struct GameTests {
             try await createGame(app: app, token: token, homeTeamId: home.id, awayTeamId: away.id, date: "2026-04-01")
             try await createGame(app: app, token: token, homeTeamId: third.id, awayTeamId: away.id, date: "2026-04-02")
 
-            try await app.testing().test(.GET, "api/v1/games?teamId=\(home.id)", afterResponse: { res async in
+            try await app.testing().test(.GET, "api/v1/games?teamId=\(home.id)", beforeRequest: { req in
+                req.headers.bearerAuthorization = .init(token: token)
+            }, afterResponse: { res async in
                 #expect(res.status == .ok)
                 let page = try? res.content.decode(PaginatedResponse<GameResponse>.self)
                 #expect(page?.items.count == 1)
@@ -114,7 +122,9 @@ struct GameTests {
             try await createGame(app: app, token: token, homeTeamId: away.id, awayTeamId: home.id, date: "2026-04-01")
             try await createGame(app: app, token: token, homeTeamId: home.id, awayTeamId: away.id, date: "2026-04-15")
 
-            try await app.testing().test(.GET, "api/v1/games?dateFrom=2026-04-01&dateTo=2026-04-10", afterResponse: { res async in
+            try await app.testing().test(.GET, "api/v1/games?dateFrom=2026-04-01&dateTo=2026-04-10", beforeRequest: { req in
+                req.headers.bearerAuthorization = .init(token: token)
+            }, afterResponse: { res async in
                 #expect(res.status == .ok)
                 let page = try? res.content.decode(PaginatedResponse<GameResponse>.self)
                 #expect(page?.items.count == 1)
@@ -134,7 +144,9 @@ struct GameTests {
                 try await createGame(app: app, token: token, homeTeamId: home.id, awayTeamId: away.id, date: "2026-04-0\(i)")
             }
 
-            try await app.testing().test(.GET, "api/v1/games?page=1&perPage=2", afterResponse: { res async in
+            try await app.testing().test(.GET, "api/v1/games?page=1&perPage=2", beforeRequest: { req in
+                req.headers.bearerAuthorization = .init(token: token)
+            }, afterResponse: { res async in
                 #expect(res.status == .ok)
                 let page = try? res.content.decode(PaginatedResponse<GameResponse>.self)
                 #expect(page?.items.count == 2)
@@ -143,7 +155,9 @@ struct GameTests {
                 #expect(page?.metadata.perPage == 2)
             })
 
-            try await app.testing().test(.GET, "api/v1/games?page=3&perPage=2", afterResponse: { res async in
+            try await app.testing().test(.GET, "api/v1/games?page=3&perPage=2", beforeRequest: { req in
+                req.headers.bearerAuthorization = .init(token: token)
+            }, afterResponse: { res async in
                 #expect(res.status == .ok)
                 let page = try? res.content.decode(PaginatedResponse<GameResponse>.self)
                 #expect(page?.items.count == 1)
@@ -162,7 +176,9 @@ struct GameTests {
             let (home, away) = try await createTeams(app: app, token: token)
             let game = try await createGame(app: app, token: token, homeTeamId: home.id, awayTeamId: away.id, date: "2026-04-01", venue: "Central Park")
 
-            try await app.testing().test(.GET, "api/v1/games/\(game.id)", afterResponse: { res async in
+            try await app.testing().test(.GET, "api/v1/games/\(game.id)", beforeRequest: { req in
+                req.headers.bearerAuthorization = .init(token: token)
+            }, afterResponse: { res async in
                 #expect(res.status == .ok)
                 let detail = try? res.content.decode(GameResponse.self)
                 #expect(detail?.homeTeam.name == "GT Home")
@@ -178,7 +194,11 @@ struct GameTests {
 
     @Test func showGameNotFound() async throws {
         try await withApp(configure: configure) { app in
-            try await app.testing().test(.GET, "api/v1/games/\(UUID())", afterResponse: { res async in
+            let token = try await loginAdmin(app: app)
+
+            try await app.testing().test(.GET, "api/v1/games/\(UUID())", beforeRequest: { req in
+                req.headers.bearerAuthorization = .init(token: token)
+            }, afterResponse: { res async in
                 #expect(res.status == .notFound)
             })
         }

@@ -31,6 +31,14 @@ struct ScoringView: View {
             }
 
             if viewModel.game.status == .live {
+                Section("Comment") {
+                    CommentEntryView { text in
+                        await viewModel.postComment(text)
+                    }
+                }
+            }
+
+            if viewModel.game.status == .live {
                 Section {
                     Button("End Game", role: .destructive) {
                         Task { await viewModel.updateStatus(.final) }

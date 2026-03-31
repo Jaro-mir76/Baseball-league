@@ -80,6 +80,29 @@ final class ScoringViewModel {
         }
     }
 
+    func postComment(_ text: String) async {
+        let trimmed = text.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return }
+        errorMessage = nil
+        let request = GameEventRequest(
+            type: .comment,
+            inning: nil,
+            inningHalf: nil,
+            homeScore: nil,
+            awayScore: nil,
+            comment: trimmed
+        )
+        do {
+            let event: GameEventResponse = try await apiClient.request(
+                .createGameEvent(gameID: game.id),
+                body: request
+            )
+            events.append(event)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
     func deleteLastEvent() async {
         guard let lastEvent = events.last else { return }
         errorMessage = nil

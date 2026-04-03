@@ -5,8 +5,9 @@ struct AuthController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
         let auth = routes.grouped("auth")
 
-        auth.post("login", use: login)
-        auth.post("signup", use: signup)
+        let rateLimited = auth.grouped(RateLimitMiddleware(maxRequests: 5, windowSeconds: 60))
+        rateLimited.post("login", use: login)
+        rateLimited.post("signup", use: signup)
         auth.post("refresh", use: refresh)
 
         let protected = auth.grouped(JWTAuthMiddleware())

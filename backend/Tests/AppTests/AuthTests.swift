@@ -209,6 +209,63 @@ struct AuthTests {
         }
     }
 
+    // MARK: - Rate Limiting
+
+    @Test func signupRateLimitExceeded() async throws {
+        try await withApp(configure: configure) { app in
+            for i in 1...5 {
+                try await app.testing().test(.POST, "api/v1/auth/signup", beforeRequest: { req in
+                    try req.content.encode(RegisterRequest(
+                        email: "ratelimit\(i)@test.com",
+                        password: "password123",
+                        name: "Rate Limit \(i)",
+                        role: .viewer
+                    ))
+                }, afterResponse: { _ async in })
+            }
+
+            // 6th request should be rate limited
+            try await app.testing().test(.POST, "api/v1/auth/signup", beforeRequest: { req in
+                try req.content.encode(RegisterRequest(
+                    email: "ratelimit6@test.com",
+                    password: "password123",
+                    name: "Rate Limit 6",
+                    role: .viewer
+                ))
+            }, afterResponse: { res async in
+                #expect(res.status == .tooManyRequests)
+            })
+
+            // Cleanup
+            for i in 1...5 {
+                try await cleanupUser(email: "ratelimit\(i)@test.com", on: app.db)
+            }
+        }
+    }
+
+    @Test func loginRateLimitExceeded() async throws {
+        try await withApp(configure: configure) { app in
+            for _ in 1...5 {
+                try await app.testing().test(.POST, "api/v1/auth/login", beforeRequest: { req in
+                    try req.content.encode(LoginRequest(
+                        email: "nobody@example.com",
+                        password: "wrong"
+                    ))
+                }, afterResponse: { _ async in })
+            }
+
+            // 6th request should be rate limited
+            try await app.testing().test(.POST, "api/v1/auth/login", beforeRequest: { req in
+                try req.content.encode(LoginRequest(
+                    email: "nobody@example.com",
+                    password: "wrong"
+                ))
+            }, afterResponse: { res async in
+                #expect(res.status == .tooManyRequests)
+            })
+        }
+    }
+
     // MARK: - Refresh
 
     @Test func refreshToken() async throws {

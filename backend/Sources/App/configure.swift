@@ -27,6 +27,7 @@ func configure(_ app: Application) async throws {
     app.migrations.add(CreatePlayer())
     app.migrations.add(CreateGame())
     app.migrations.add(CreateGameEvent())
+    app.migrations.add(AddRefreshTokenFamily())
 
     try await app.autoMigrate()
 

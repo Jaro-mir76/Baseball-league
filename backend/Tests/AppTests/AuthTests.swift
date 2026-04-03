@@ -287,6 +287,40 @@ struct AuthTests {
         }
     }
 
+    @Test func refreshTokenReuseRevokesFamily() async throws {
+        try await withApp(configure: configure) { app in
+            let loginResponse = try await loginAdminFull(app: app)
+            let originalRefresh = loginResponse.refreshToken
+
+            // First refresh — should succeed, returns new token
+            var newRefreshToken: String!
+            try await app.testing().test(.POST, "api/v1/auth/refresh", beforeRequest: { req in
+                try req.content.encode(RefreshRequest(refreshToken: originalRefresh))
+            }, afterResponse: { res async in
+                #expect(res.status == .ok)
+                let token = try? res.content.decode(TokenResponse.self)
+                newRefreshToken = token?.refreshToken
+            })
+
+            // Replay the OLD (now-revoked) token — simulates attacker reuse
+            try await app.testing().test(.POST, "api/v1/auth/refresh", beforeRequest: { req in
+                try req.content.encode(RefreshRequest(refreshToken: originalRefresh))
+            }, afterResponse: { res async in
+                #expect(res.status == .unauthorized)
+            })
+
+            // The NEW token should also be revoked (entire family nuked)
+            try await app.testing().test(.POST, "api/v1/auth/refresh", beforeRequest: { req in
+                try req.content.encode(RefreshRequest(refreshToken: newRefreshToken))
+            }, afterResponse: { res async in
+                #expect(res.status == .unauthorized)
+            })
+
+            // Cleanup
+            try await RefreshToken.query(on: app.db).delete()
+        }
+    }
+
     @Test func refreshWithInvalidToken() async throws {
         try await withApp(configure: configure) { app in
             try await app.testing().test(.POST, "api/v1/auth/refresh", beforeRequest: { req in

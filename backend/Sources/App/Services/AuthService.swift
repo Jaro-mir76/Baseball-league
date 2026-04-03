@@ -112,22 +112,35 @@ struct AuthService {
             throw Abort(.unauthorized, reason: "Invalid refresh token")
         }
 
+        // Reuse detection: if this token was already consumed (revoked),
+        // an attacker is replaying a stolen token. Revoke the ENTIRE family
+        // to kick out both the attacker and the legitimate user, forcing re-login.
+        if storedToken.isRevoked {
+            try await RefreshToken.query(on: db)
+                .filter(\.$family == storedToken.family)
+                .delete()
+            throw Abort(.unauthorized, reason: "Refresh token reuse detected — session revoked")
+        }
+
         guard storedToken.expiresAt > Date() else {
             try await storedToken.delete(on: db)
             throw Abort(.unauthorized, reason: "Refresh token expired")
         }
 
         let user = storedToken.user
+        let family = storedToken.family
 
-        // Revoke old token
-        try await storedToken.delete(on: db)
+        // Mark old token as revoked (keep it to detect reuse)
+        storedToken.isRevoked = true
+        try await storedToken.save(on: db)
 
-        // Issue new pair
+        // Issue new pair — same family so reuse can be detected
         let tokenPair = try generateTokens(for: user)
         let newRefreshToken = RefreshToken(
             token: tokenPair.refreshToken,
             userID: try user.requireID(),
-            expiresAt: Date().addingTimeInterval(30 * 24 * 60 * 60)
+            expiresAt: Date().addingTimeInterval(30 * 24 * 60 * 60),
+            family: family
         )
         try await newRefreshToken.save(on: db)
 
@@ -147,7 +160,10 @@ struct AuthService {
         else {
             return // Token not found — already revoked or invalid, no-op
         }
-        try await storedToken.delete(on: db)
+        // Delete the entire family (active + revoked tokens for this session)
+        try await RefreshToken.query(on: db)
+            .filter(\.$family == storedToken.family)
+            .delete()
     }
 
     // MARK: - Token Generation
